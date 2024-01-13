@@ -1,6 +1,7 @@
 package delivery
 
 import (
+	"bwastartup/auth"
 	"bwastartup/helper"
 	"bwastartup/user"
 	"fmt"
@@ -18,11 +19,12 @@ type Delivery interface {
 }
 
 type delivery struct {
-	usecase user.Usecase
+	usecase     user.Usecase
+	authService auth.Service
 }
 
-func NewDelivery(usecase user.Usecase) Delivery {
-	return &delivery{usecase}
+func NewDelivery(usecase user.Usecase, authService auth.Service) Delivery {
+	return &delivery{usecase, authService}
 }
 
 func (d *delivery) Register(c *gin.Context) {
@@ -49,7 +51,14 @@ func (d *delivery) Register(c *gin.Context) {
 		return
 	}
 
-	formatter := user.FormatUser(result, "yewgbkabsivuecaslahjhehvceksacskcas")
+	token, errToken := d.authService.GenerateToken(result.ID)
+	if errToken != nil {
+		response := helper.ResponseContainer("register account failed", http.StatusBadRequest, "error", errToken.Error())
+		c.JSON(http.StatusBadRequest, response)
+		return
+	}
+
+	formatter := user.FormatUser(result, token)
 
 	response := helper.ResponseContainer("account has been registered", http.StatusOK, "success", formatter)
 
@@ -79,7 +88,14 @@ func (d *delivery) Login(c *gin.Context) {
 		return
 	}
 
-	formatter := user.FormatUser(result, "yewgbkabsivuecaslahjhehvceksacskcas")
+	token, errToken := d.authService.GenerateToken(result.ID)
+	if errToken != nil {
+		response := helper.ResponseContainer("register account failed", http.StatusBadRequest, "error", errToken.Error())
+		c.JSON(http.StatusBadRequest, response)
+		return
+	}
+
+	formatter := user.FormatUser(result, token)
 	response := helper.ResponseContainer("login success", http.StatusOK, "success", formatter)
 
 	c.JSON(http.StatusOK, response)
@@ -126,9 +142,9 @@ func (d *delivery) UploadAvatar(c *gin.Context) {
 		return
 	}
 
-	userID := 51
+	currentUser := c.MustGet("currentUser").(user.User).ID
 
-	path := fmt.Sprintf("images/%d-%s", userID, file.Filename)
+	path := fmt.Sprintf("images/%d-%s", currentUser, file.Filename)
 
 	err = c.SaveUploadedFile(file, path)
 	if err != nil {
@@ -139,7 +155,7 @@ func (d *delivery) UploadAvatar(c *gin.Context) {
 		return
 	}
 
-	_, err = d.usecase.SaveAvatar(userID, path)
+	_, err = d.usecase.SaveAvatar(currentUser, path)
 	if err != nil {
 		data := gin.H{"is_uploaded": false}
 		response := helper.ResponseContainer("Failed to upload avatar image", http.StatusBadRequest, "error", data)

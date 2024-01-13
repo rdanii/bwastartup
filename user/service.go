@@ -11,6 +11,7 @@ type Usecase interface {
 	Login(input LoginInput) (User, error)
 	IsAvailableEmail(input CheckEmailInput) (bool, error)
 	SaveAvatar(id int, fileLocation string) (User, error)
+	GetUserByID(id int) (User, error)
 }
 
 type usecase struct {
@@ -92,4 +93,17 @@ func (u *usecase) SaveAvatar(id int, fileLocation string) (User, error) {
 	}
 
 	return uploadAvtr, nil
+}
+
+func (u *usecase) GetUserByID(id int) (User, error) {
+	user, err := u.repository.FindById(id)
+	if err != nil {
+		return user, err
+	}
+
+	if user.ID == 0 {
+		return user, errors.New("no user found on with that id")
+	}
+
+	return user, nil
 }
