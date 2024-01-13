@@ -10,6 +10,7 @@ type Usecase interface {
 	RegisterInput(input RegisterUserInput) (User, error)
 	Login(input LoginInput) (User, error)
 	IsAvailableEmail(input CheckEmailInput) (bool, error)
+	SaveAvatar(id int, fileLocation string) (User, error)
 }
 
 type usecase struct {
@@ -75,4 +76,20 @@ func (u *usecase) IsAvailableEmail(input CheckEmailInput) (bool, error) {
 	}
 
 	return false, nil
+}
+
+func (u *usecase) SaveAvatar(id int, fileLocation string) (User, error) {
+	user, err := u.repository.FindById(id)
+	if err != nil {
+		return user, err
+	}
+
+	user.AvatarFileName = fileLocation
+
+	uploadAvtr, errUpAvtr := u.repository.Update(user)
+	if errUpAvtr != nil {
+		return uploadAvtr, errUpAvtr
+	}
+
+	return uploadAvtr, nil
 }

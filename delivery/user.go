@@ -3,6 +3,7 @@ package delivery
 import (
 	"bwastartup/helper"
 	"bwastartup/user"
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -13,6 +14,7 @@ type Delivery interface {
 	Register(c *gin.Context)
 	Login(c *gin.Context)
 	CheckEmailIsAvailable(c *gin.Context)
+	UploadAvatar(c *gin.Context)
 }
 
 type delivery struct {
@@ -112,5 +114,42 @@ func (d *delivery) CheckEmailIsAvailable(c *gin.Context) {
 	}
 
 	response := helper.ResponseContainer(msg, http.StatusOK, "success", data)
+	c.JSON(http.StatusOK, response)
+}
+
+func (d *delivery) UploadAvatar(c *gin.Context) {
+	file, err := c.FormFile("avatar")
+	if err != nil {
+		data := gin.H{"is_uploaded": false}
+		response := helper.ResponseContainer("Failed to upload avatar image", http.StatusBadRequest, "error", data)
+		c.JSON(http.StatusBadRequest, response)
+		return
+	}
+
+	userID := 51
+
+	path := fmt.Sprintf("images/%d-%s", userID, file.Filename)
+
+	err = c.SaveUploadedFile(file, path)
+	if err != nil {
+		data := gin.H{"is_uploaded": false}
+		response := helper.ResponseContainer("Failed to upload avatar image", http.StatusBadRequest, "error", data)
+
+		c.JSON(http.StatusBadRequest, response)
+		return
+	}
+
+	_, err = d.usecase.SaveAvatar(userID, path)
+	if err != nil {
+		data := gin.H{"is_uploaded": false}
+		response := helper.ResponseContainer("Failed to upload avatar image", http.StatusBadRequest, "error", data)
+
+		c.JSON(http.StatusBadRequest, response)
+		return
+	}
+
+	data := gin.H{"is_uploaded": true}
+	response := helper.ResponseContainer("Avatar successfuly uploaded", http.StatusOK, "success", data)
+
 	c.JSON(http.StatusOK, response)
 }
