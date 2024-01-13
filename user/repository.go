@@ -25,7 +25,7 @@ func (r *repository) Save(user User) (User, error) {
 
 	err := r.db.Debug().First(&user, "email = ?", input.Email).Error
 	if err == nil {
-		return user, errors.New("email sudah ada")
+		return user, errors.New("email already exists")
 	}
 
 	err = r.db.Debug().Create(&user).Error

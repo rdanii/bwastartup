@@ -9,6 +9,7 @@ import (
 type Usecase interface {
 	RegisterInput(input RegisterUserInput) (User, error)
 	Login(input LoginInput) (User, error)
+	IsAvailableEmail(input CheckEmailInput) (bool, error)
 }
 
 type usecase struct {
@@ -59,4 +60,19 @@ func (u *usecase) Login(input LoginInput) (User, error) {
 	}
 
 	return user, nil
+}
+
+func (u *usecase) IsAvailableEmail(input CheckEmailInput) (bool, error) {
+	email := input.Email
+
+	user, err := u.repository.FindByEmail(email)
+	if err != nil {
+		return false, err
+	}
+
+	if user.ID == 0 {
+		return true, nil
+	}
+
+	return false, nil
 }

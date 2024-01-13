@@ -12,6 +12,7 @@ import (
 type Delivery interface {
 	Register(c *gin.Context)
 	Login(c *gin.Context)
+	CheckEmailIsAvailable(c *gin.Context)
 }
 
 type delivery struct {
@@ -36,8 +37,8 @@ func (d *delivery) Register(c *gin.Context) {
 
 	result, errResult := d.usecase.RegisterInput(input)
 	if errResult != nil {
-		if strings.Contains(errResult.Error(), "email sudah ada") {
-			response := helper.ResponseContainer("email yang anda masukkan sudah terdaftar", http.StatusNotFound, "error", nil)
+		if strings.Contains(errResult.Error(), "email already exists") {
+			response := helper.ResponseContainer("the email you entered is already registered", http.StatusNotFound, "error", nil)
 			c.JSON(http.StatusNotFound, response)
 			return
 		}
@@ -79,5 +80,37 @@ func (d *delivery) Login(c *gin.Context) {
 	formatter := user.FormatUser(result, "yewgbkabsivuecaslahjhehvceksacskcas")
 	response := helper.ResponseContainer("login success", http.StatusOK, "success", formatter)
 
+	c.JSON(http.StatusOK, response)
+}
+
+func (d *delivery) CheckEmailIsAvailable(c *gin.Context) {
+	var input user.CheckEmailInput
+	err := c.ShouldBindJSON(&input)
+	if err != nil {
+		errors := helper.FormatValidationError(err)
+		errMsg := gin.H{"errors": errors}
+		response := helper.ResponseContainer("email checking failed", http.StatusUnprocessableEntity, "error", errMsg)
+		c.JSON(http.StatusUnprocessableEntity, response)
+		return
+	}
+
+	isAvailable, errCheckEmail := d.usecase.IsAvailableEmail(input)
+	if errCheckEmail != nil {
+		response := helper.ResponseContainer("email checking failed", http.StatusBadRequest, "error", errCheckEmail.Error())
+		c.JSON(http.StatusBadRequest, response)
+		return
+	}
+
+	data := gin.H{
+		"isAvailable": isAvailable,
+	}
+
+	msg := "email has been registered"
+
+	if isAvailable {
+		msg = "email is available"
+	}
+
+	response := helper.ResponseContainer(msg, http.StatusOK, "success", data)
 	c.JSON(http.StatusOK, response)
 }
