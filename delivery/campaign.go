@@ -54,7 +54,7 @@ func (d *campaignDelivery) GetCampaignDetail(c *gin.Context) {
 		return
 	}
 
-	formatter := campaign.FormatCampaignDetail(result)
+	formatter := campaign.FormatDetailCampaign(result)
 	response := helper.ResponseContainer("List of campaigns", http.StatusOK, "success", formatter)
 	c.JSON(http.StatusOK, response)
 }
