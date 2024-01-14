@@ -6,7 +6,6 @@ import (
 	"bwastartup/user"
 	"fmt"
 	"net/http"
-	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -41,13 +40,8 @@ func (d *delivery) Register(c *gin.Context) {
 
 	result, errResult := d.usecase.RegisterInput(input)
 	if errResult != nil {
-		if strings.Contains(errResult.Error(), "email already exists") {
-			response := helper.ResponseContainer("the email you entered is already registered", http.StatusNotFound, "error", nil)
-			c.JSON(http.StatusNotFound, response)
-			return
-		}
-		response := helper.ResponseContainer("register account failed", http.StatusBadRequest, "error", errResult.Error())
-		c.JSON(http.StatusBadRequest, response)
+		response := helper.ResponseContainer("register account failed", http.StatusNotFound, "error", errResult.Error())
+		c.JSON(http.StatusNotFound, response)
 		return
 	}
 
@@ -59,7 +53,6 @@ func (d *delivery) Register(c *gin.Context) {
 	}
 
 	formatter := user.FormatUser(result, token)
-
 	response := helper.ResponseContainer("account has been registered", http.StatusOK, "success", formatter)
 
 	c.JSON(http.StatusOK, response)
@@ -78,13 +71,8 @@ func (d *delivery) Login(c *gin.Context) {
 
 	result, errResult := d.usecase.Login(input)
 	if errResult != nil {
-		if strings.Contains(errResult.Error(), "user not found") {
-			response := helper.ResponseContainer("no user found on that email", http.StatusNotFound, "error", nil)
-			c.JSON(http.StatusNotFound, response)
-			return
-		}
-		response := helper.ResponseContainer("login failed", http.StatusBadRequest, "error", errResult.Error())
-		c.JSON(http.StatusBadRequest, response)
+		response := helper.ResponseContainer("login failed", http.StatusNotFound, "error", errResult.Error())
+		c.JSON(http.StatusNotFound, response)
 		return
 	}
 

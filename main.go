@@ -2,6 +2,7 @@ package main
 
 import (
 	"bwastartup/auth"
+	"bwastartup/campaign"
 	"bwastartup/delivery"
 	"bwastartup/helper"
 	"bwastartup/user"
@@ -28,6 +29,10 @@ func main() {
 	u := user.NewUsecase(r)
 	d := delivery.NewDelivery(u, authService)
 
+	campaignRepo := campaign.NewRepository(db)
+	campaignUsecase := campaign.NewUsecase(campaignRepo)
+	campaignDelivery := delivery.NewCampaignDelivery(campaignUsecase)
+
 	router := gin.Default()
 
 	router.NoRoute(func(ctx *gin.Context) {
@@ -37,10 +42,18 @@ func main() {
 	})
 
 	v1 := router.Group("/api/v1")
+
+	router.Static("/images", "./images")
+
+	// user API
 	v1.POST("/users", d.Register)
 	v1.POST("/sessions", d.Login)
 	v1.POST("/email_checkers", d.CheckEmailIsAvailable)
 	v1.POST("/avatars", authMiddleware(authService, u), d.UploadAvatar)
+
+	// campaigns API
+	v1.GET("/campaigns", campaignDelivery.GetCampaigns)
+	v1.GET("/campaigns/:id", campaignDelivery.GetCampaignDetail)
 
 	router.Run()
 }

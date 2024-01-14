@@ -29,6 +29,15 @@ func (u *usecase) RegisterInput(input RegisterUserInput) (User, error) {
 	user.Occupation = input.Occupation
 	user.Email = input.Email
 
+	existingEmail, err := u.repository.FindByEmail(user.Email)
+	if err != nil {
+		return existingEmail, err
+	}
+
+	if existingEmail.Email != "" {
+		return existingEmail, errors.New("the email you entered is already registered")
+	}
+
 	pass, errPass := bcrypt.GenerateFromPassword([]byte(input.Password), bcrypt.MinCost)
 	if errPass != nil {
 		return user, errPass
@@ -53,7 +62,7 @@ func (u *usecase) Login(input LoginInput) (User, error) {
 	}
 
 	if user.ID == 0 {
-		return user, errors.New("user not found")
+		return user, errors.New("no user found on that email")
 	}
 
 	errPass := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password))

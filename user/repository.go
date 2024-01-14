@@ -1,8 +1,6 @@
 package user
 
 import (
-	"errors"
-
 	"gorm.io/gorm"
 )
 
@@ -22,15 +20,8 @@ func NewRepository(db *gorm.DB) Repository {
 }
 
 func (r *repository) Save(user User) (User, error) {
-	var input RegisterUserInput
-	input.Email = user.Email
 
-	err := r.db.Debug().First(&user, "email = ?", input.Email).Error
-	if err == nil {
-		return user, errors.New("email already exists")
-	}
-
-	err = r.db.Debug().Create(&user).Error
+	err := r.db.Debug().Create(&user).Error
 	if err != nil {
 		return user, err
 	}
