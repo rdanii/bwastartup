@@ -9,8 +9,9 @@ import (
 
 type Usecase interface {
 	GetCampaigns(userID int) ([]Campaign, error)
-	GetCampaignByID(input GetCampaignDetailInput) (Campaign, error)
+	GetCampaignByID(input GetCampaignIDInput) (Campaign, error)
 	CreateCampaign(input CreateCampaignInput) (Campaign, error)
+	UpdateCampaign(inputID GetCampaignIDInput, inputData CreateCampaignInput) (Campaign, error)
 }
 
 type usecase struct {
@@ -39,7 +40,7 @@ func (u *usecase) GetCampaigns(userID int) ([]Campaign, error) {
 	return campaigns, nil
 }
 
-func (u *usecase) GetCampaignByID(input GetCampaignDetailInput) (Campaign, error) {
+func (u *usecase) GetCampaignByID(input GetCampaignIDInput) (Campaign, error) {
 	campaign, err := u.repository.FindByID(input.ID)
 	if err != nil {
 		return campaign, err
@@ -72,4 +73,28 @@ func (u *usecase) CreateCampaign(input CreateCampaignInput) (Campaign, error) {
 	}
 
 	return newCampaign, nil
+}
+
+func (u *usecase) UpdateCampaign(inputID GetCampaignIDInput, inputData CreateCampaignInput) (Campaign, error) {
+	campaign, err := u.repository.FindByID(inputID.ID)
+	if err != nil {
+		return campaign, err
+	}
+
+	if campaign.UserID != inputData.User.ID {
+		return campaign, errors.New("not an owner of the campaign")
+	}
+
+	campaign.Name = inputData.Name
+	campaign.ShortDescription = inputData.ShortDescription
+	campaign.Description = inputData.Description
+	campaign.Perks = inputData.Perks
+	campaign.GoalAmount = inputData.GoalAmount
+
+	dataUpdated, errUpdated := u.repository.Update(campaign)
+	if errUpdated != nil {
+		return dataUpdated, errUpdated
+	}
+
+	return dataUpdated, nil
 }
