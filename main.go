@@ -41,21 +41,22 @@ func main() {
 		})
 	})
 
-	v1 := router.Group("/api/v1")
+	api := router.Group("/api/v1")
 
 	router.Static("/images", "./images")
 
 	// user API
-	v1.POST("/users", d.Register)
-	v1.POST("/sessions", d.Login)
-	v1.POST("/email_checkers", d.CheckEmailIsAvailable)
-	v1.POST("/avatars", authMiddleware(authService, u), d.UploadAvatar)
+	api.POST("/users", d.Register)
+	api.POST("/sessions", d.Login)
+	api.POST("/email_checkers", d.CheckEmailIsAvailable)
+	api.POST("/avatars", authMiddleware(authService, u), d.UploadAvatar)
 
 	// campaigns API
-	v1.GET("/campaigns", campaignDelivery.GetCampaigns)
-	v1.GET("/campaigns/:id", campaignDelivery.GetCampaignDetail)
-	v1.POST("/campaigns", authMiddleware(authService, u), campaignDelivery.CreateCampaign)
-	v1.PUT("/campaigns/:id", authMiddleware(authService, u), campaignDelivery.UpdateCampaign)
+	api.GET("/campaigns", campaignDelivery.GetCampaigns)
+	api.GET("/campaigns/:id", campaignDelivery.GetCampaignDetail)
+	api.POST("/campaigns", authMiddleware(authService, u), campaignDelivery.CreateCampaign)
+	api.PUT("/campaigns/:id", authMiddleware(authService, u), campaignDelivery.UpdateCampaign)
+	api.POST("/campaign-images", authMiddleware(authService, u), campaignDelivery.UploadCampaignImage)
 
 	router.Run()
 }

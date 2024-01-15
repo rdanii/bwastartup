@@ -12,6 +12,7 @@ type Usecase interface {
 	GetCampaignByID(input GetCampaignIDInput) (Campaign, error)
 	CreateCampaign(input CreateCampaignInput) (Campaign, error)
 	UpdateCampaign(inputID GetCampaignIDInput, inputData CreateCampaignInput) (Campaign, error)
+	SaveCampaignImage(input CreateCampaignImageInput, fileLocation string) (CampaignImage, error)
 }
 
 type usecase struct {
@@ -97,4 +98,39 @@ func (u *usecase) UpdateCampaign(inputID GetCampaignIDInput, inputData CreateCam
 	}
 
 	return dataUpdated, nil
+}
+
+func (u *usecase) SaveCampaignImage(input CreateCampaignImageInput, fileLocation string) (CampaignImage, error) {
+
+	campaign, err := u.repository.FindByID(input.CampaignID)
+	if err != nil {
+		return CampaignImage{}, err
+	}
+
+	if campaign.UserID != input.User.ID {
+		return CampaignImage{}, errors.New("not an owner of the campaign")
+	}
+
+	var isPrimary int
+
+	if input.IsPrimary {
+		isPrimary = 1
+		_, errIsPrimary := u.repository.IsPrimaryImage(input.CampaignID)
+		if errIsPrimary != nil {
+			return CampaignImage{}, errIsPrimary
+		}
+	}
+
+	campaignImage := CampaignImage{
+		CampaignID: input.CampaignID,
+		IsPrimary:  isPrimary,
+		FileName:   fileLocation,
+	}
+
+	data, errData := u.repository.CreateImage(campaignImage)
+	if errData != nil {
+		return data, errData
+	}
+
+	return data, nil
 }
