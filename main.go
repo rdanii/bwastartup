@@ -5,6 +5,7 @@ import (
 	"bwastartup/campaign"
 	"bwastartup/delivery"
 	"bwastartup/helper"
+	"bwastartup/transaction"
 	"bwastartup/user"
 	"log"
 	"net/http"
@@ -33,6 +34,10 @@ func main() {
 	campaignUsecase := campaign.NewUsecase(campaignRepo)
 	campaignDelivery := delivery.NewCampaignDelivery(campaignUsecase)
 
+	transactionRepo := transaction.NewRepository(db)
+	transactionUsecase := transaction.NewUsecase(transactionRepo, campaignRepo)
+	transactionDelivery := delivery.NewTransactionDelivery(transactionUsecase)
+
 	router := gin.Default()
 
 	router.NoRoute(func(ctx *gin.Context) {
@@ -57,6 +62,8 @@ func main() {
 	api.POST("/campaigns", authMiddleware(authService, u), campaignDelivery.CreateCampaign)
 	api.PUT("/campaigns/:id", authMiddleware(authService, u), campaignDelivery.UpdateCampaign)
 	api.POST("/campaign-images", authMiddleware(authService, u), campaignDelivery.UploadCampaignImage)
+	api.GET("/campaigns/:id/transactions", authMiddleware(authService, u), transactionDelivery.GetCampaignTransactions)
+	api.GET("/transactions", authMiddleware(authService, u), transactionDelivery.GetTransactionsByUserID)
 
 	router.Run()
 }

@@ -108,7 +108,7 @@ func (u *usecase) SaveCampaignImage(input CreateCampaignImageInput, fileLocation
 	}
 
 	if campaign.UserID != input.User.ID {
-		return CampaignImage{}, errors.New("not an owner of the campaign")
+		return CampaignImage{}, errors.New("not an owner of the campaign image")
 	}
 
 	var isPrimary int
