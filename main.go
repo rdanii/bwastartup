@@ -5,6 +5,7 @@ import (
 	"bwastartup/campaign"
 	"bwastartup/delivery"
 	"bwastartup/helper"
+	"bwastartup/payment"
 	"bwastartup/transaction"
 	"bwastartup/user"
 	"log"
@@ -12,6 +13,9 @@ import (
 	"strings"
 
 	"github.com/dgrijalva/jwt-go"
+	"github.com/gin-contrib/cors"
+	"github.com/gin-contrib/sessions"
+	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -25,6 +29,7 @@ func main() {
 	}
 
 	authService := auth.NewService()
+	paymentService := payment.NewService()
 
 	r := user.NewRepository(db)
 	u := user.NewUsecase(r)
@@ -35,10 +40,13 @@ func main() {
 	campaignDelivery := delivery.NewCampaignDelivery(campaignUsecase)
 
 	transactionRepo := transaction.NewRepository(db)
-	transactionUsecase := transaction.NewUsecase(transactionRepo, campaignRepo)
+	transactionUsecase := transaction.NewUsecase(transactionRepo, campaignRepo, paymentService)
 	transactionDelivery := delivery.NewTransactionDelivery(transactionUsecase)
 
 	router := gin.Default()
+	router.Use(cors.Default())
+	cookieStore := cookie.NewStore([]byte(auth.SECRET_KEY))
+	router.Use(sessions.Sessions("bwastartup", cookieStore))
 
 	router.NoRoute(func(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{
@@ -64,6 +72,7 @@ func main() {
 	api.POST("/campaign-images", authMiddleware(authService, u), campaignDelivery.UploadCampaignImage)
 	api.GET("/campaigns/:id/transactions", authMiddleware(authService, u), transactionDelivery.GetCampaignTransactions)
 	api.GET("/transactions", authMiddleware(authService, u), transactionDelivery.GetTransactionsByUserID)
+	api.POST("/transactions", authMiddleware(authService, u), transactionDelivery.CreateTransaction)
 
 	router.Run()
 }

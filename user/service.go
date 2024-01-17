@@ -43,6 +43,7 @@ func (u *usecase) RegisterInput(input RegisterUserInput) (User, error) {
 		return user, errPass
 	}
 	user.PasswordHash = string(pass)
+	user.Role = "user"
 
 	result, err := u.repository.Save(user)
 	if err != nil {

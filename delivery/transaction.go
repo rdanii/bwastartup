@@ -12,6 +12,7 @@ import (
 type TransactionDelivery interface {
 	GetCampaignTransactions(c *gin.Context)
 	GetTransactionsByUserID(c *gin.Context)
+	CreateTransaction(c *gin.Context)
 }
 
 type transactionDelivery struct {
@@ -61,6 +62,33 @@ func (d *transactionDelivery) GetTransactionsByUserID(c *gin.Context) {
 	}
 
 	formatter := transaction.FormatUserTransactions(result)
+	response := helper.ResponseContainer("Users's transactions", http.StatusOK, "success", formatter)
+	c.JSON(http.StatusOK, response)
+}
+
+func (d *transactionDelivery) CreateTransaction(c *gin.Context) {
+	var input transaction.CreateTransactionInput
+
+	err := c.ShouldBindJSON(&input)
+	if err != nil {
+		errors := helper.FormatValidationError(err)
+		errMsg := gin.H{"errors": errors}
+		response := helper.ResponseContainer("Failed to create user's transactions", http.StatusBadRequest, "error", errMsg)
+		c.JSON(http.StatusBadRequest, response)
+		return
+	}
+
+	currentUser := c.MustGet("currentUser").(user.User)
+	input.User = currentUser
+
+	result, errResult := d.usecase.CreateTransaction(input)
+	if errResult != nil {
+		response := helper.ResponseContainer("Failed to create user's transactions", http.StatusBadRequest, "error", errResult.Error())
+		c.JSON(http.StatusBadRequest, response)
+		return
+	}
+
+	formatter := transaction.FormatTransaction(result)
 	response := helper.ResponseContainer("Users's transactions", http.StatusOK, "success", formatter)
 	c.JSON(http.StatusOK, response)
 }
