@@ -44,8 +44,14 @@ func main() {
 	transactionDelivery := delivery.NewTransactionDelivery(transactionUsecase)
 
 	router := gin.Default()
+
+	// Menggunakan middleware cors.Default() untuk menangani CORS.
 	router.Use(cors.Default())
+
+	// Membuat instance baru dari cookie store dengan menggunakan SECRET_KEY untuk enkripsi.
 	cookieStore := cookie.NewStore([]byte(auth.SECRET_KEY))
+
+	// Menggunakan middleware sessions.Sessions() untuk manajemen sesi.
 	router.Use(sessions.Sessions("bwastartup", cookieStore))
 
 	router.NoRoute(func(ctx *gin.Context) {
@@ -77,46 +83,60 @@ func main() {
 	router.Run()
 }
 
+// Middleware Gin yang digunakan untuk melakukan otentikasi
 func authMiddleware(authService auth.Service, userService user.Usecase) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		// Mengambil nilai Authorization header dari request.
 		authHeader := c.GetHeader("Authorization")
 
+		// Memeriksa apakah Authorization header mengandung token JWT dengan skema "Bearer".
 		if !strings.Contains(authHeader, "Bearer") {
+			// Jika tidak, kembalikan respons Unauthorized.
 			response := helper.ResponseContainer("Unauthorized", http.StatusUnauthorized, "error", nil)
 			c.AbortWithStatusJSON(http.StatusUnauthorized, response)
 			return
 		}
 
+		// Mendapatkan token JWT dari Authorization header.
 		var tokenString string
 		strToken := strings.Split(authHeader, " ")
 		if len(strToken) == 2 {
 			tokenString = strToken[1]
 		}
 
+		// Memvalidasi token JWT menggunakan AuthService.
 		token, err := authService.ValidateToken(tokenString)
 		if err != nil {
+			// Jika token tidak valid, kembalikan respons Unauthorized.
 			response := helper.ResponseContainer("Unauthorized", http.StatusUnauthorized, "error", nil)
 			c.AbortWithStatusJSON(http.StatusUnauthorized, response)
 			return
 		}
 
+		// Mendapatkan klaim (claims) dari token JWT.
 		claim, ok := token.Claims.(jwt.MapClaims)
 
+		// Memeriksa apakah klaim valid.
 		if !ok || !token.Valid {
+			// Jika klaim tidak valid, kembalikan respons Unauthorized.
 			response := helper.ResponseContainer("Unauthorized", http.StatusUnauthorized, "error", nil)
 			c.AbortWithStatusJSON(http.StatusUnauthorized, response)
 			return
 		}
 
+		// Mendapatkan user ID dari klaim.
 		userID := int(claim["user_id"].(float64))
 
+		// Mendapatkan informasi user berdasarkan user ID menggunakan UserService.
 		user, err := userService.GetUserByID(userID)
 		if err != nil {
+			// Jika tidak dapat menemukan user, kembalikan respons Unauthorized.
 			response := helper.ResponseContainer("Unauthorized", http.StatusUnauthorized, "error", nil)
 			c.AbortWithStatusJSON(http.StatusUnauthorized, response)
 			return
 		}
 
+		// Menetapkan informasi user ke dalam konteks (context) Gin.
 		c.Set("currentUser", user)
 	}
 }
