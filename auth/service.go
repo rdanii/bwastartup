@@ -2,6 +2,7 @@ package auth
 
 import (
 	"errors"
+	"time"
 
 	"github.com/dgrijalva/jwt-go"
 )
@@ -28,6 +29,7 @@ func (s *jwtService) GenerateToken(userID int) (string, error) {
 	// Membuat claim untuk token JWT dengan user ID.
 	claim := jwt.MapClaims{}
 	claim["user_id"] = userID
+	claim["exp"] = time.Now().Add(time.Second * 30).Unix()
 
 	// Membuat token JWT dengan claim yang sudah disiapkan.
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claim)
